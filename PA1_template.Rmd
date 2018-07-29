@@ -1,22 +1,99 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
+title: "Reproducible Research: Peer Assessment 1 - Andy Tinkham"
 output: 
   html_document:
     keep_md: true
 ---
 
+```{r Options}
+options(scipen = 999)
+```
+
+This assignment makes use of data from a personal activity monitoring device. 
+This device collects data at 5 minute intervals through out the day. The data 
+consists of two months of data from an anonymous individual collected during 
+the months of October and November, 2012 and include the number of steps taken 
+in 5 minute intervals each day.
 
 ## Loading and preprocessing the data
+First, we need to read in the data (included in this same repository by default.
+If for some reason the file is missing, download it from the course web site).
 
+```{r LoadData, echo=TRUE, }
+# If this file got separated from the data file, download the data file again
+if (!file.exists("./activity.zip")) {
+        fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+        download.file(fileUrl, destfile = "activity.zip", method = "curl")
+        rm(fileUrl)
+}
 
+require(readr)
+dataset <- read_csv("./activity.zip")
+
+# Convert the interval to factors to make it easier to compare across days
+dataset$interval <- factor(dataset$interval)
+
+```
 
 ## What is mean total number of steps taken per day?
+From this dataset, we can calculate the total number of steps per day:
+```{r StepsPerDay}
+byday <- aggregate(dataset$steps, by = list(Date=dataset$date), FUN = sum)
+byday
+```
 
+And we can make a histogram to show the frequency of steps in 1000-step increments:
+```{r StepsPerDayHistogram}
 
+hist(byday$x, 
+     breaks = 25, 
+     col = "purple", 
+     main = "Frequency of daily step totals", 
+     xlab = "Steps", 
+     ylab = "Number of days")
+axis(side = 1, 
+     at = seq(0, 25000, 5000), 
+     labels = seq(0, 25000, 5000))
+```
+
+From this, we can see that the the range goes from a couple days having less than 
+1000 steps to a couple days having more than 20,000 steps. The largest number of
+days (10) had between 10,000 and 11,000 steps. 
+
+```{r CalculateMeanMedian}
+stepsmean <- mean(byday$x, na.rm=TRUE)
+stepsmedian <- median(byday$x, na.rm=TRUE)
+```
+
+Across the measurement period, the mean number of steps was `r stepsmean` and 
+the median number of steps was `r stepsmedian`.
 
 ## What is the average daily activity pattern?
+Looking across the days of the measurement period, we can get a picture of the
+average daily activity pattern.
 
+```{r CreateTimeSeries}
+byinterval <- aggregate(dataset$steps, by = list(Interval=dataset$interval), 
+                        FUN = mean, na.rm=TRUE)
+byinterval
+```
 
+We can plot this as a time series plot:
+```{r DailyActivityPatternPlot}
+plot(byinterval$Interval, byinterval$x, 
+     type = "l", 
+     main = "Average steps per interval",
+     xlab = "Interval (in HHMM format)",
+     ylab = "Average steps in measurement period")
+
+```
+
+```{r IntervalWithMaxSteps}
+largestInterval <- byinterval[which.max(byinterval$x), ]
+```
+
+During the study period, the most steps on average (`r largestInterval$x`) 
+occurred in the `r largestInterval$Interval` interval.
 
 ## Imputing missing values
 
