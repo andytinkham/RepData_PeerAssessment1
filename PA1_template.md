@@ -1,8 +1,8 @@
 ---
 title: "Reproducible Research: Peer Assessment 1 - Andy Tinkham"
 output: 
-  html_document:
-    keep_md: true
+ html_document:
+  keep_md: true
 ---
 
 
@@ -11,9 +11,9 @@ options(scipen = 999)
 ```
 
 This assignment makes use of data from a personal activity monitoring device. 
-This device collects data at 5 minute intervals through out the day. The data 
+This device collects data at 5 minute intervals throughout the day. The data 
 consists of two months of data from an anonymous individual collected during 
-the months of October and November, 2012 and include the number of steps taken 
+the months of October and November, 2012 and includes the number of steps taken 
 in 5 minute intervals each day.
 
 ## Loading and preprocessing the data
@@ -22,11 +22,11 @@ If for some reason the file is missing, download it from the course web site).
 
 
 ```r
-# If this file got separated from the data file, download the data file again
+# if this file got separated from the data file, download the data file again
 if (!file.exists("./activity.zip")) {
-        fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
-        download.file(fileUrl, destfile = "activity.zip", method = "curl")
-        rm(fileUrl)
+    fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+    download.file(fileUrl, destfile = "activity.zip", method = "curl")
+    rm(fileUrl)
 }
 
 require(readr)
@@ -58,7 +58,7 @@ dataset$interval <- factor(dataset$interval)
 From this dataset, we can calculate the total number of steps per day:
 
 ```r
-byday <- aggregate(dataset$steps, by = list(Date=dataset$date), FUN = sum)
+byday <- aggregate(dataset$steps, by = list(Date = dataset$date), FUN = sum)
 byday
 ```
 
@@ -131,26 +131,26 @@ And we can make a histogram to show the frequency of steps in 1000-step incremen
 
 ```r
 hist(byday$x, 
-     breaks = 25, 
-     col = "purple", 
-     main = "Frequency of daily step totals", 
-     xlab = "Steps", 
-     ylab = "Number of days")
+   breaks = 25, 
+   col = "purple", 
+   main = "Frequency of daily step totals", 
+   xlab = "Steps", 
+   ylab = "Number of days")
 axis(side = 1, 
-     at = seq(0, 25000, 5000), 
-     labels = seq(0, 25000, 5000))
+   at = seq(0, 25000, 5000), 
+   labels = seq(0, 25000, 5000))
 ```
 
 ![](PA1_template_files/figure-html/StepsPerDayHistogram-1.png)<!-- -->
 
-From this, we can see that the the range goes from a couple days having less than 
+From this, we can see that the range goes from a couple days having less than 
 1000 steps to a couple days having more than 20,000 steps. The largest number of
 days (10) had between 10,000 and 11,000 steps. 
 
 
 ```r
-stepsmean <- mean(byday$x, na.rm=TRUE)
-stepsmedian <- median(byday$x, na.rm=TRUE)
+stepsmean <- mean(byday$x, na.rm = TRUE)
+stepsmedian <- median(byday$x, na.rm = TRUE)
 ```
 
 Across the measurement period, the mean number of steps was 10766.1886792 and 
@@ -162,13 +162,13 @@ average daily activity pattern.
 
 
 ```r
-byinterval <- aggregate(dataset$steps, by = list(Interval=dataset$interval), 
-                        FUN = mean, na.rm=TRUE)
+byinterval <- aggregate(dataset$steps, by = list(interval = dataset$interval), 
+            FUN = mean, na.rm = TRUE)
 byinterval
 ```
 
 ```
-##     Interval           x
+##     interval           x
 ## 1          0   1.7169811
 ## 2          5   0.3396226
 ## 3         10   0.1320755
@@ -462,25 +462,87 @@ byinterval
 We can plot this as a time series plot:
 
 ```r
-plot(byinterval$Interval, byinterval$x, 
-     type = "l", 
-     main = "Average steps per interval",
-     xlab = "Interval (in HHMM format)",
-     ylab = "Average steps in measurement period")
+plot(byinterval$interval, byinterval$x, 
+   type = 'l',
+   main = "Average steps per interval",
+   xlab = "interval (in HHMM format)",
+   ylab = "Average steps in measurement period")
 ```
 
 ![](PA1_template_files/figure-html/DailyActivityPatternPlot-1.png)<!-- -->
 
 
 ```r
-largestInterval <- byinterval[which.max(byinterval$x), ]
+largestinterval <- byinterval[which.max(byinterval$x), ]
 ```
 
 During the study period, the most steps on average (206.1698113) 
 occurred in the 835 interval.
 
-## Imputing missing values
+## imputing missing values
+Up until now, we have simply ignored days/intervals where no data was collected.
+This may introduce bias into our calculations, so we will fill in each NA interval
+record by using the mean for that interval across the measurement period.
 
 
+```r
+imputeddataset = cbind(dataset)
+imputeddataset$steps = ifelse(is.na(imputeddataset$steps), 
+               byinterval$x, 
+               imputeddataset$steps)
 
-## Are there differences in activity patterns between weekdays and weekends?
+imputedbyday <- aggregate(imputeddataset$steps, by = list(Date = imputeddataset$date), 
+             FUN = sum)
+```
+
+Now, we can make a new histogram and calculate the new mean and median:
+
+```r
+hist(imputedbyday$x, 
+   breaks = 25, 
+   col = "green", 
+   main = "Frequency of daily step totals (including imputed data)", 
+   xlab = "Steps", 
+   ylab = "Number of days")
+axis(side = 1, 
+   at = seq(0, 25000, 5000), 
+   labels = seq(0, 25000, 5000))
+axis(side = 2,
+   at = seq(0, 25, 5),
+   labels = seq(0, 25, 5))
+```
+
+![](PA1_template_files/figure-html/imputedHistogram-1.png)<!-- -->
+
+
+```r
+imputedStepsMean <- mean(imputedbyday$x)
+imputedStepsMedian <- median(imputedbyday$x)
+```
+
+After imputing the missing data, the new mean is 10766.1886792 and the 
+new median is 10766.1886792. In this case, the mean remains the same
+(which makes sense, as NA records only appeared in days where the whole day was 
+all NA records. Thus, we added 8 more days, each with the average daily total of
+steps.). The median value shifts slightly higher to be the same as the mean, 
+again reflecting the addition of 8 more days all right at the average value.
+
+In this case, the impact of imputing missing data by using the average for the 
+missing interval is minimal, just shifting the median closer to the average.
+
+## Are there differences in activity patterns betien weekdays and weekends?
+By sorting the data based on whether the day was a weekday or weekend, we can
+see if our study subject has a different pattern of activity during the week 
+versus on Saturday or Sunday.
+
+
+```r
+setDayType <- function(value) {
+    day <- weekdays(as.Date(value, "%Y-%m-%d"))
+    return_val <- ifelse(day == 'Saturday' || day == 'Sunday', 
+        'weekend', 'weekday')
+    return_val
+}
+
+imputeddataset$daytype <- as.factor(sapply(imputeddataset$date, setDayType))
+```
